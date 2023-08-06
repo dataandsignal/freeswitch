@@ -1,0 +1,1 @@
+make && sudo make install && sudo cp /usr/local/freeswitch/mod/mod_denoiser.so /lib/freeswitch/mod/
