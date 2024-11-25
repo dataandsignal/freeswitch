@@ -8101,6 +8101,7 @@ SWITCH_DECLARE(switch_status_t) switch_core_media_choose_port(switch_core_sessio
 	switch_media_handle_t *smh;
 	const char *tstr = switch_media_type2str(type);
 	char vname[128] = "";
+	const char *extrtpip_always = NULL;
 
 	switch_assert(session);
 
@@ -8145,34 +8146,40 @@ SWITCH_DECLARE(switch_status_t) switch_core_media_choose_port(switch_core_sessio
 
 	sdp_port = engine->local_sdp_port;
 
-	/* Check if NAT is detected  */
-	if (!zstr(smh->mparams->remote_ip) && switch_core_media_check_nat(smh, smh->mparams->remote_ip)) {
-		/* Yes, map the port through switch_nat */
-		switch_nat_add_mapping(engine->local_sdp_port, SWITCH_NAT_UDP, &sdp_port, SWITCH_FALSE);
+	if (!zstr(extrtpip_always = switch_channel_get_variable(session->channel, "das-ext-rtp-ip-always")) && switch_true(extrtpip_always)) {
+		switch_log_printf(SWITCH_CHANNEL_SESSION_LOG(session), SWITCH_LOG_DEBUG,
+						  "Using ext-rtp-ip [%s] due to das-ext-rtp-ip-always set\n", smh->mparams->extrtpip);
+		use_ip = smh->mparams->extrtpip;
+	} else {
+		/* Check if NAT is detected  */
+		if (!zstr(smh->mparams->remote_ip) && switch_core_media_check_nat(smh, smh->mparams->remote_ip)) {
+			/* Yes, map the port through switch_nat */
+			switch_nat_add_mapping(engine->local_sdp_port, SWITCH_NAT_UDP, &sdp_port, SWITCH_FALSE);
 
-		switch_snprintf(vname, sizeof(vname), "rtp_adv_%s_ip", tstr);
+			switch_snprintf(vname, sizeof(vname), "rtp_adv_%s_ip", tstr);
 
-		/* Find an IP address to use */
-		if (!(use_ip = switch_channel_get_variable(session->channel, vname))
-			&& !zstr(smh->mparams->extrtpip)) {
-			use_ip = smh->mparams->extrtpip;
-		}
+			/* Find an IP address to use */
+			if (!(use_ip = switch_channel_get_variable(session->channel, vname)) && !zstr(smh->mparams->extrtpip)) {
+				use_ip = smh->mparams->extrtpip;
+			}
 
-		if (use_ip) {
-			if (switch_core_media_ext_address_lookup(session, &lookup_rtpip, &sdp_port, use_ip) != SWITCH_STATUS_SUCCESS) {
-				/* Address lookup was required and fail (external ip was "host:..." or "stun:...") */
-				return SWITCH_STATUS_FALSE;
+			if (use_ip) {
+				if (switch_core_media_ext_address_lookup(session, &lookup_rtpip, &sdp_port, use_ip) !=
+					SWITCH_STATUS_SUCCESS) {
+					/* Address lookup was required and fail (external ip was "host:..." or "stun:...") */
+					return SWITCH_STATUS_FALSE;
+				} else {
+					/* Address properly resolved, use it as external ip */
+					use_ip = lookup_rtpip;
+				}
 			} else {
-				/* Address properly resolved, use it as external ip */
-				use_ip = lookup_rtpip;
+				/* No external ip found, use the profile's rtp ip */
+				use_ip = smh->mparams->rtpip;
 			}
 		} else {
-			/* No external ip found, use the profile's rtp ip */
+			/* No NAT traversal required, use the profile's rtp ip */
 			use_ip = smh->mparams->rtpip;
 		}
-	} else {
-		/* No NAT traversal required, use the profile's rtp ip */
-		use_ip = smh->mparams->rtpip;
 	}
 
 	if (zstr(smh->mparams->remote_ip)) { /* no remote_ip, we're originating */
