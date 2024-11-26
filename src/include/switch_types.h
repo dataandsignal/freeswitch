@@ -964,12 +964,20 @@ typedef enum {
 	*/
 
 
-	RTP_BUG_ALWAYS_AUTO_ADJUST = (1 << 12)
+	RTP_BUG_ALWAYS_AUTO_ADJUST = (1 << 12),
 
 	/*
 	  Leave the auto-adjust behavior enableed permenantly rather than only at appropriate times.  (IMPLICITLY sets RTP_BUG_ACCEPT_ANY_PACKETS)
 
 	 */
+
+	RTP_BUG_YEALINK_OPUS_OVERSAMPLING = (1 << 13)
+
+	/*
+		[DAS] Yealink sends OPUS/48000 with only sprop-maxcapturerate=16000
+		[DAS] This is 16 kHz (max) signal oversampled at 48 kHz, and there's no separate media payload offered for OPUS/16000
+		[DAS] That's oversampling but we will match it as OPUS/48000 and still prefer it over g722
+	*/
 
 } switch_rtp_bug_flag_t;
 

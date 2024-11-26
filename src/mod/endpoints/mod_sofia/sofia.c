@@ -4620,7 +4620,7 @@ switch_status_t config_sofia(sofia_config_t reload, char *profile_name)
 
 					profile->trans_timeout = 100;
 
-					profile->auto_rtp_bugs = RTP_BUG_CISCO_SKIP_MARK_BIT_2833;// | RTP_BUG_SONUS_SEND_INVALID_TIMESTAMP_2833;
+					profile->auto_rtp_bugs = RTP_BUG_CISCO_SKIP_MARK_BIT_2833 | RTP_BUG_YEALINK_OPUS_OVERSAMPLING;// | RTP_BUG_SONUS_SEND_INVALID_TIMESTAMP_2833;
 
 					profile->pool = pool;
 

@@ -1028,6 +1028,14 @@ SWITCH_DECLARE(void) switch_core_media_parse_rtp_bugs(switch_rtp_bug_flag_t *fla
 	if (switch_stristr("~ALWAYS_AUTO_ADJUST", str)) {
 		*flag_pole &= ~(RTP_BUG_ALWAYS_AUTO_ADJUST | RTP_BUG_ACCEPT_ANY_PACKETS);
 	}
+
+	if (switch_stristr("RTP_BUG_YEALINK_OPUS_OVERSAMPLING", str)) {
+		*flag_pole |= RTP_BUG_YEALINK_OPUS_OVERSAMPLING;
+	}
+
+	if (switch_stristr("~RTP_BUG_YEALINK_OPUS_OVERSAMPLING", str)) {
+		*flag_pole &= ~RTP_BUG_YEALINK_OPUS_OVERSAMPLING;
+	}
 }
 
 /**
@@ -4881,6 +4889,16 @@ SWITCH_DECLARE(uint8_t) switch_core_media_negotiate_sdp(switch_core_session_t *s
 								  "Don't worry, DTMF will work but you may want to ask them to fix it......\n");
 			}
 		}
+
+		if ((smh->mparams->auto_rtp_bugs & RTP_BUG_YEALINK_OPUS_OVERSAMPLING)) {
+			if (strstr(sdp->sdp_subject, "SDP data")) {
+				a_engine->rtp_bugs |= RTP_BUG_YEALINK_OPUS_OVERSAMPLING;
+				switch_log_printf(SWITCH_CHANNEL_SESSION_LOG(session), SWITCH_LOG_WARNING,
+								  "\n[DAS] Yealink devices from T31x and T34x family send OPUS/48000 with sprop-maxcapturerate=16000.\n"
+								  "[DAS] This is input sampled at 16 kHz (max) oversampled to 48 kHz, and there's no separate media payload offered for OPUS/16000.\n"
+								  "[DAS] We will match it as OPUS/48000 and still prefer over g722\n");
+			}
+		}
 	}
 
 	/* check dtmf_type variable */
@@ -5512,14 +5530,27 @@ SWITCH_DECLARE(uint8_t) switch_core_media_negotiate_sdp(switch_core_session_t *s
 					switch_log_printf(SWITCH_CHANNEL_SESSION_LOG(session), SWITCH_LOG_DEBUG, "Audio Codec Compare [%s:%d:%u:%d:%u:%d]/[%s:%d:%u:%d:%u:%d]\n",
 									  rm_encoding, map->rm_pt, (int) remote_codec_rate, codec_ms, map_bit_rate, map_channels,
 									  imp->iananame, imp->ianacode, codec_rate, imp->microseconds_per_packet / 1000, bit_rate, imp->number_of_channels);
-					if ((zstr(map->rm_encoding) || (smh->mparams->ndlb & SM_NDLB_ALLOW_BAD_IANANAME)) && map->rm_pt < 96) {
+					if ((zstr(map->rm_encoding) || (smh->mparams->ndlb & SM_NDLB_ALLOW_BAD_IANANAME)) &&
+						map->rm_pt < 96) {
 						match = (map->rm_pt == imp->ianacode) ? 1 : 0;
 					} else {
 						match = (!strcasecmp(rm_encoding, imp->iananame) &&
 								 ((map->rm_pt < 96 && imp->ianacode < 96) || (map->rm_pt > 95 && imp->ianacode > 95)) &&
 								 (remote_codec_rate == codec_rate || fmtp_remote_codec_rate == imp->actual_samples_per_second)) ? 1 : 0;
 						if (fmtp_remote_codec_rate) {
-							remote_codec_rate = fmtp_remote_codec_rate;
+							if (match && !strcasecmp(map->rm_encoding, "opus") && remote_codec_rate == 48000 && remote_codec_rate > fmtp_remote_codec_rate) {
+								switch_log_printf(SWITCH_CHANNEL_SESSION_LOG(session), SWITCH_LOG_WARNING, "This OPUS/48000 is oversampling...\n");
+								// Apply a fix for Opus on Yealink T34W / T31 ?
+								if (a_engine->rtp_bugs & RTP_BUG_YEALINK_OPUS_OVERSAMPLING) {
+									switch_log_printf(SWITCH_CHANNEL_SESSION_LOG(session), SWITCH_LOG_WARNING, "It's from Yealink T31x/T34x. We match it as [%s:%d:%u:%d:%u:%d]\n",
+										rm_encoding, map->rm_pt, (int)remote_codec_rate, codec_ms, map_bit_rate, map_channels);
+									remote_codec_rate = 48000;
+								} else {
+									remote_codec_rate = fmtp_remote_codec_rate;
+								}
+							} else {
+								remote_codec_rate = fmtp_remote_codec_rate;
+							}
 						}
 					}
 
