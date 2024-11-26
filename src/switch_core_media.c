@@ -4894,7 +4894,8 @@ SWITCH_DECLARE(uint8_t) switch_core_media_negotiate_sdp(switch_core_session_t *s
 			if (strstr(sdp->sdp_subject, "SDP data")) {
 				a_engine->rtp_bugs |= RTP_BUG_YEALINK_OPUS_OVERSAMPLING;
 				switch_log_printf(SWITCH_CHANNEL_SESSION_LOG(session), SWITCH_LOG_WARNING,
-								  "\n[DAS] Yealink devices from T31x and T34x family send OPUS/48000 with sprop-maxcapturerate=16000.\n"
+								  "\n[DAS] This SDP is sent form Yealink device of T31x and T34x family.\n"
+								  "[DAS] Yealink devices from T31x and T34x family send OPUS/48000 with sprop-maxcapturerate=16000.\n"
 								  "[DAS] This is input sampled at 16 kHz (max) oversampled to 48 kHz, and there's no separate media payload offered for OPUS/16000.\n"
 								  "[DAS] We will match it as OPUS/48000 and still prefer over g722\n");
 			}
