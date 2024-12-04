@@ -835,6 +835,8 @@ void *SWITCH_THREAD_FUNC conference_thread_run(switch_thread_t *thread, void *ob
 		if (!conference_utils_member_test_flag(imember, MFLAG_NOCHANNEL)) {
 			channel = switch_core_session_get_channel(imember->session);
 
+			das_conference_webhook("conference-end", conference, imember, channel);
+
 			if (!switch_false(switch_channel_get_variable(channel, "hangup_after_conference"))) {
 				/* add this little bit to preserve the bridge cause code in case of an early media call that */
 				/* never answers */
@@ -907,7 +909,7 @@ void *SWITCH_THREAD_FUNC conference_thread_run(switch_thread_t *thread, void *ob
 	switch_event_add_header_string(event, SWITCH_STACK_BOTTOM, "Action", "conference-destroy");
 	switch_event_fire(&event);
 
-	das_conference_webhook("conference-end", conference, NULL, channel);
+	das_conference_webhook("conference-end", conference, NULL, NULL);
 	
 	switch_mutex_lock(conference->member_mutex);
 	conference_cdr_render(conference);
