@@ -52,6 +52,48 @@ conference_globals_t conference_globals = {0};
 int EC = 0;
 char *api_syntax = NULL;
 
+void das_conference_webhook(const char *event_type, conference_obj_t *conference, conference_member_t *member, switch_channel_t *channel)
+{
+	char *json_string = NULL;
+	char curl_command[2000] = {0};
+	const char *conference_event_callback = switch_channel_get_variable(channel, "das-conference-event-callback");
+	if (zstr(conference_event_callback)) {
+		switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_WARNING, "Conference event callback not set\n");
+		return;
+	}
+
+	{
+		cJSON *json_event = cJSON_CreateObject(), *json_conference_data = cJSON_CreateObject();
+		cJSON_AddStringToObject(json_conference_data, "conference_name", conference->name);
+		cJSON_AddStringToObject(json_conference_data, "conference_uuid", conference->uuid_str);
+		if (channel) {
+			cJSON_AddStringToObject(json_conference_data, "channel_uuid", switch_channel_get_uuid(channel));
+			cJSON_AddStringToObject(json_conference_data, "channel_name", switch_channel_get_name(channel));
+		}
+		if (member) {
+			char participant_id[100] = { 0 };
+			snprintf(participant_id, sizeof(participant_id), "%d", member->id);
+			cJSON_AddStringToObject(json_conference_data, "participant_id", participant_id);
+			cJSON_AddStringToObject(json_conference_data, "participant_caller_id_number", switch_channel_get_variable(member->channel, "caller_id_number"));
+			cJSON_AddStringToObject(json_conference_data, "participant_caller_id_name", switch_channel_get_variable(member->channel, "caller_id_name"));
+		}
+
+		cJSON_AddStringToObject(json_event, "event_type", event_type);
+		cJSON_AddItemToObject(json_event, "event_data", json_conference_data);
+
+		json_string = cJSON_Print(json_event);
+		snprintf(curl_command, sizeof(curl_command),
+				 "echo \"json: [%s]\" && curl -H \"Content-Type: application/json\" X POST %s -d '%s' -v", json_string,
+				 conference_event_callback, json_string);
+		system(curl_command);
+		cJSON_Delete(json_event);
+		if (json_string) {
+			free(json_string);
+			json_string = NULL;
+		}
+	}
+}
+
 SWITCH_STANDARD_API(conference_api_main){
 	return conference_api_main_real(cmd, session, stream);
 }
@@ -793,6 +835,8 @@ void *SWITCH_THREAD_FUNC conference_thread_run(switch_thread_t *thread, void *ob
 		if (!conference_utils_member_test_flag(imember, MFLAG_NOCHANNEL)) {
 			channel = switch_core_session_get_channel(imember->session);
 
+			das_conference_webhook("conference-end", conference, imember, channel);
+
 			if (!switch_false(switch_channel_get_variable(channel, "hangup_after_conference"))) {
 				/* add this little bit to preserve the bridge cause code in case of an early media call that */
 				/* never answers */
@@ -864,6 +908,8 @@ void *SWITCH_THREAD_FUNC conference_thread_run(switch_thread_t *thread, void *ob
 	conference_event_add_data(conference, event);
 	switch_event_add_header_string(event, SWITCH_STACK_BOTTOM, "Action", "conference-destroy");
 	switch_event_fire(&event);
+
+	das_conference_webhook("conference-end", conference, NULL, NULL);
 	
 	switch_mutex_lock(conference->member_mutex);
 	conference_cdr_render(conference);
@@ -3852,6 +3898,8 @@ conference_obj_t *conference_new(char *name, conference_xml_cfg_t cfg, switch_co
 	}
 	switch_event_add_header_string(event, SWITCH_STACK_BOTTOM, "Action", "conference-create");
 	switch_event_fire(&event);
+
+	das_conference_webhook("conference-start", conference, NULL, channel);
 
  end:
 	if (conference) {
