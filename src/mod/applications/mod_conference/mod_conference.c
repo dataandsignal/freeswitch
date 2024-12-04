@@ -72,7 +72,7 @@ void das_conference_webhook(const char *event_type, conference_obj_t *conference
 		}
 		if (member) {
 			char participant_id[100] = { 0 };
-			itoa(member->id, participant_id, 10);
+			snprintf(participant_id, sizeof(participant_id), "%d", member->id);
 			cJSON_AddStringToObject(json_conference_data, "participant_id", participant_id);
 			cJSON_AddStringToObject(json_conference_data, "participant_caller_id_number", switch_channel_get_variable(member->channel, "caller_id_number"));
 			cJSON_AddStringToObject(json_conference_data, "participant_caller_id_name", switch_channel_get_variable(member->channel, "caller_id_name"));
