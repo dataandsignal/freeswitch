@@ -3853,6 +3853,32 @@ conference_obj_t *conference_new(char *name, conference_xml_cfg_t cfg, switch_co
 	switch_event_add_header_string(event, SWITCH_STACK_BOTTOM, "Action", "conference-create");
 	switch_event_fire(&event);
 
+	{
+		const char *conference_event_callback = switch_channel_get_variable(channel, "das-conference-event-callback");
+		if (zstr(conference_event_callback)) {
+			switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_WARNING, "Conference event callback not set\n");
+		} else {
+			cJSON *json_event = cJSON_CreateObject(), *json_conference_data = cJSON_CreateObject();
+			char *json_string = NULL;
+			char curl_command[20000] = { 0 };
+
+			cJSON_AddStringToObject(json_conference_data, "conference_name", conference->name);
+			cJSON_AddStringToObject(json_conference_data, "conference_uuid", conference->uuid_str);
+
+			cJSON_AddStringToObject(json_event, "event_type", "conference_start");
+			cJSON_AddItemToObject(json_event, "event_data", json_conference_data);
+
+			json_string = cJSON_Print(json_event);
+			snprintf(curl_command, sizeof(curl_command), "echo \"json: [%s]\" && curl -X POST %s -d '%s' -v", json_string, conference_event_callback, json_string);
+			system(curl_command);
+			cJSON_Delete(json_event);
+			if (json_string) {
+				free(json_string);
+				json_string = NULL;
+			}
+		}
+	}
+
  end:
 	if (conference) {
 		switch_thread_rwlock_rdlock(conference->rwlock);
