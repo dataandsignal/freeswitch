@@ -3865,7 +3865,7 @@ conference_obj_t *conference_new(char *name, conference_xml_cfg_t cfg, switch_co
 			cJSON_AddStringToObject(json_conference_data, "conference_name", conference->name);
 			cJSON_AddStringToObject(json_conference_data, "conference_uuid", conference->uuid_str);
 
-			cJSON_AddStringToObject(json_event, "event_type", "conference_start");
+			cJSON_AddStringToObject(json_event, "event_type", "conference-start");
 			cJSON_AddItemToObject(json_event, "event_data", json_conference_data);
 
 			json_string = cJSON_Print(json_event);
