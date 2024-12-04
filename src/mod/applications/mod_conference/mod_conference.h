@@ -990,6 +990,7 @@ struct bg_call {
 /* FUNCTION DEFINITIONS */
 
 
+void das_conference_webhook(const char *event_type, conference_obj_t *conference, conference_member_t *member, switch_channel_t *channel);
 switch_bool_t conference_utils_test_flag(conference_obj_t *conference, conference_flag_t flag);
 conference_relationship_t *conference_member_get_relationship(conference_member_t *member, conference_member_t *other_member);
 

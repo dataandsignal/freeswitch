@@ -965,6 +965,8 @@ switch_status_t conference_member_add(conference_obj_t *conference, conference_m
 			switch_event_fire(&event);
 		}
 
+		das_conference_webhook("participant-join", conference, member, channel);
+
 		switch_channel_clear_app_flag_key("conference_silent", channel, CONF_SILENT_REQ);
 		switch_channel_set_app_flag_key("conference_silent", channel, CONF_SILENT_DONE);
 
@@ -1195,6 +1197,8 @@ switch_status_t conference_member_del(conference_obj_t *conference, conference_m
 	switch_assert(member != NULL);
 
 	switch_thread_rwlock_wrlock(member->rwlock);
+
+	das_conference_webhook("participant-leave", conference, member, switch_core_session_get_channel(member->session));
 
 	if (member->video_queue) {
 		conference_video_flush_queue(member->video_queue, 0);
