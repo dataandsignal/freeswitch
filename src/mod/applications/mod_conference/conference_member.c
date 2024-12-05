@@ -1313,12 +1313,17 @@ switch_status_t conference_member_del(conference_obj_t *conference, conference_m
 		member->conference->video_floor_holder = 0;
 	}
 
+	das_conference_webhook("participant-leave", conference, member, switch_core_session_get_channel(member->session));
+
 	if (!conference_utils_member_test_flag(member, MFLAG_NOCHANNEL)) {
 		switch_channel_t *channel = switch_core_session_get_channel(member->session);
 		if (conference_utils_member_test_flag(member, MFLAG_GHOST)) {
 			conference->count_ghosts--;
 		} else {
 			conference->count--;
+			if (conference->count == 0) {
+				das_conference_webhook("conference-end", conference, NULL, channel);
+			}
 		}
 
 		conference_video_check_flush(member, SWITCH_FALSE);

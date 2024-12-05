@@ -56,7 +56,7 @@ void das_conference_webhook(const char *event_type, conference_obj_t *conference
 {
 	char *json_string = NULL;
 	char curl_command[2000] = {0};
-	const char *conference_event_callback = switch_channel_get_variable(channel, "das-conference-event-callback");
+	const char *conference_event_callback = channel ? switch_channel_get_variable(channel, "das-conference-event-callback") : NULL;
 	if (zstr(conference_event_callback)) {
 		switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_WARNING, "Conference event callback not set\n");
 		return;
@@ -82,9 +82,7 @@ void das_conference_webhook(const char *event_type, conference_obj_t *conference
 		cJSON_AddItemToObject(json_event, "event_data", json_conference_data);
 
 		json_string = cJSON_Print(json_event);
-		snprintf(curl_command, sizeof(curl_command),
-				 "echo \"json: [%s]\" && curl -H \"Content-Type: application/json\" X POST %s -d '%s' -v", json_string,
-				 conference_event_callback, json_string);
+		snprintf(curl_command, sizeof(curl_command), "echo \"json: [%s]\" && curl -H \"Content-Type: application/json\" -X POST %s -d '%s' -v", json_string, conference_event_callback, json_string);
 		system(curl_command);
 		cJSON_Delete(json_event);
 		if (json_string) {
