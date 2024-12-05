@@ -82,9 +82,7 @@ void das_conference_webhook(const char *event_type, conference_obj_t *conference
 		cJSON_AddItemToObject(json_event, "event_data", json_conference_data);
 
 		json_string = cJSON_Print(json_event);
-		snprintf(curl_command, sizeof(curl_command),
-				 "echo \"json: [%s]\" && curl -H \"Content-Type: application/json\" -X POST %s -d '%s' -v", json_string,
-				 conference_event_callback, json_string);
+		snprintf(curl_command, sizeof(curl_command), "echo \"json: [%s]\" && curl -H \"Content-Type: application/json\" -X POST %s -d '%s' -v", json_string, conference_event_callback, json_string);
 		system(curl_command);
 		cJSON_Delete(json_event);
 		if (json_string) {
@@ -908,6 +906,8 @@ void *SWITCH_THREAD_FUNC conference_thread_run(switch_thread_t *thread, void *ob
 	conference_event_add_data(conference, event);
 	switch_event_add_header_string(event, SWITCH_STACK_BOTTOM, "Action", "conference-destroy");
 	switch_event_fire(&event);
+
+	das_conference_webhook("conference-end", conference, NULL, NULL);
 	
 	switch_mutex_lock(conference->member_mutex);
 	conference_cdr_render(conference);
