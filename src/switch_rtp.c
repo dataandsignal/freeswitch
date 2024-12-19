@@ -2626,10 +2626,12 @@ SWITCH_DECLARE(switch_status_t) switch_rtp_set_local_address(switch_rtp_t *rtp_s
 	switch_socket_t *new_sock = NULL, *old_sock = NULL;
 	switch_status_t status = SWITCH_STATUS_FALSE;
 	int j = 0;
+#if 0
 #ifndef WIN32
 	char o[5] = "TEST", i[5] = "";
 	switch_size_t len, ilen = 0;
 	int x;
+#endif
 #endif
 
 	if (rtp_session->ready != 1) {
@@ -2726,6 +2728,7 @@ SWITCH_DECLARE(switch_status_t) switch_rtp_set_local_address(switch_rtp_t *rtp_s
 
 
 
+#if 0
 #ifndef WIN32
 	len = sizeof(i);
 	switch_socket_opt_set(new_sock, SWITCH_SO_NONBLOCK, TRUE);
@@ -2749,6 +2752,7 @@ SWITCH_DECLARE(switch_status_t) switch_rtp_set_local_address(switch_rtp_t *rtp_s
 	}
 	switch_socket_opt_set(new_sock, SWITCH_SO_NONBLOCK, FALSE);
 
+#endif
 #endif
 
 	old_sock = rtp_session->sock_input;
