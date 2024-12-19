@@ -2726,6 +2726,7 @@ SWITCH_DECLARE(switch_status_t) switch_rtp_set_local_address(switch_rtp_t *rtp_s
 
 
 
+#if 0
 #ifndef WIN32
 	len = sizeof(i);
 	switch_socket_opt_set(new_sock, SWITCH_SO_NONBLOCK, TRUE);
@@ -2749,6 +2750,7 @@ SWITCH_DECLARE(switch_status_t) switch_rtp_set_local_address(switch_rtp_t *rtp_s
 	}
 	switch_socket_opt_set(new_sock, SWITCH_SO_NONBLOCK, FALSE);
 
+#endif
 #endif
 
 	old_sock = rtp_session->sock_input;
