@@ -46,7 +46,7 @@ static switch_t38_options_t * switch_core_media_process_udptl(switch_core_sessio
 static void switch_core_media_set_r_sdp_codec_string(switch_core_session_t *session, const char *codec_string, sdp_session_t *sdp, switch_sdp_type_t sdp_type);
 static void gen_ice(switch_core_session_t *session, switch_media_type_t type, const char *ip, switch_port_t port);
 //#define GOOGLE_ICE
-#define RTCP_MUX
+#define RTCP_MUX 1
 #define MAX_CODEC_CHECK_FRAMES 50//x:mod_sofia.h
 #define MAX_MISMATCH_FRAMES 5//x:mod_sofia.h
 #define type2str(type) type == SWITCH_MEDIA_TYPE_VIDEO ? "video" : (type == SWITCH_MEDIA_TYPE_AUDIO ? "audio" : "text")
