@@ -74,8 +74,11 @@ void das_conference_webhook(const char *event_type, conference_obj_t *conference
 			char participant_id[100] = { 0 };
 			snprintf(participant_id, sizeof(participant_id), "%d", member->id);
 			cJSON_AddStringToObject(json_conference_data, "participant_id", participant_id);
+			cJSON_AddStringToObject(json_conference_data, "participant_call_direction", switch_channel_direction(member->channel) == SWITCH_CALL_DIRECTION_INBOUND ? "inbound" : "outbound");
 			cJSON_AddStringToObject(json_conference_data, "participant_caller_id_number", switch_channel_get_variable(member->channel, "caller_id_number"));
 			cJSON_AddStringToObject(json_conference_data, "participant_caller_id_name", switch_channel_get_variable(member->channel, "caller_id_name"));
+			cJSON_AddStringToObject(json_conference_data, "participant_callee_id_number", switch_channel_get_variable(member->channel, "callee_id_number"));
+			cJSON_AddStringToObject(json_conference_data, "participant_callee_id_name", switch_channel_get_variable(member->channel, "callee_id_name"));
 		}
 
 		cJSON_AddStringToObject(json_event, "event_type", event_type);
